@@ -9,6 +9,7 @@ import {
   resolveImplicitBedrockProvider,
   resolveImplicitCopilotProvider,
   resolveImplicitProviders,
+  resolveImplicitVertexProvider,
 } from "./models-config.providers.js";
 
 type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
@@ -97,6 +98,13 @@ export async function ensureOpenClawModelsJson(
     providers["amazon-bedrock"] = existing
       ? mergeProviderModels(implicitBedrock, existing)
       : implicitBedrock;
+  }
+  const implicitVertex = await resolveImplicitVertexProvider({ agentDir, config: cfg });
+  if (implicitVertex) {
+    const existingVertex = providers["google-vertex"];
+    providers["google-vertex"] = existingVertex
+      ? mergeProviderModels(implicitVertex, existingVertex)
+      : implicitVertex;
   }
   const implicitCopilot = await resolveImplicitCopilotProvider({ agentDir });
   if (implicitCopilot && !providers["github-copilot"]) {

@@ -1,3 +1,4 @@
+import { getEnvApiKey } from "@mariozechner/pi-ai";
 import type { OpenClawConfig } from "../config/config.js";
 import type { ModelDefinitionConfig } from "../config/types.models.js";
 import {
@@ -29,6 +30,7 @@ import {
   buildTogetherModelDefinition,
 } from "./together-models.js";
 import { discoverVeniceModels, VENICE_BASE_URL } from "./venice-models.js";
+import { resolveVertexBaseUrl, VERTEX_MODEL_CATALOG } from "./vertex-models.js";
 
 type ModelsConfig = NonNullable<OpenClawConfig["models"]>;
 export type ProviderConfig = NonNullable<ModelsConfig["providers"]>[string];
@@ -901,5 +903,44 @@ export async function resolveImplicitBedrockProvider(params: {
     api: "bedrock-converse-stream",
     auth: "aws-sdk",
     models,
+  } satisfies ProviderConfig;
+}
+
+export async function resolveImplicitVertexProvider(params: {
+  agentDir: string;
+  config?: OpenClawConfig;
+  env?: NodeJS.ProcessEnv;
+}): Promise<ProviderConfig | null> {
+  const env = params.env ?? process.env;
+  const discoveryConfig = params.config?.models?.vertexDiscovery;
+  const enabled = discoveryConfig?.enabled;
+
+  const hasAdcCreds = getEnvApiKey("google-vertex") !== undefined;
+
+  if (enabled === false) {
+    return null;
+  }
+  if (enabled !== true && !hasAdcCreds) {
+    return null;
+  }
+
+  const project =
+    discoveryConfig?.project ??
+    env.GOOGLE_CLOUD_PROJECT ??
+    env.CLOUDSDK_CORE_PROJECT ??
+    env.GCLOUD_PROJECT;
+
+  if (!project?.trim()) {
+    return null;
+  }
+
+  const region =
+    discoveryConfig?.region ?? env.GOOGLE_CLOUD_REGION ?? env.CLOUDSDK_COMPUTE_REGION ?? "us-central1";
+
+  const baseUrl = resolveVertexBaseUrl({ project: project.trim(), region: region.trim() });
+
+  return {
+    baseUrl,
+    models: VERTEX_MODEL_CATALOG,
   } satisfies ProviderConfig;
 }

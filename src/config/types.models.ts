@@ -60,8 +60,15 @@ export type BedrockDiscoveryConfig = {
   defaultMaxTokens?: number;
 };
 
+export type VertexDiscoveryConfig = {
+  enabled?: boolean;
+  project?: string;
+  region?: string;
+};
+
 export type ModelsConfig = {
   mode?: "merge" | "replace";
   providers?: Record<string, ModelProviderConfig>;
   bedrockDiscovery?: BedrockDiscoveryConfig;
+  vertexDiscovery?: VertexDiscoveryConfig;
 };
